@@ -1,0 +1,70 @@
+{% extends 'admin.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Form Prediksi Pendaftaran Kursus</h2>
+
+    <!-- Card Instruksi -->
+    <div class="card mb-4 border-info">
+        <div class="card-header bg-info text-white">
+            📝 Petunjuk Pengisian Form
+        </div>
+        <div class="card-body">
+            <ul class="mb-0">
+                <li>Isi data pelanggan sesuai kolom yang tersedia di bawah ini.</li>
+                <li>Pilih hari kunjungan, waktu, durasi, dan jenis paket dengan benar.</li>
+                <li>Pastikan semua informasi telah diisi sebelum menekan tombol <strong>Prediksi</strong>.</li>
+                <li>Hasil prediksi akan muncul di bawah form jika berhasil diproses.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Form Prediksi -->
+    <form method="post">
+        {% csrf_token %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="mb-3">
+                    {{ form.as_p }}
+                </div>
+                <button type="submit" class="btn btn-primary">🔍 Prediksi</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Hasil Prediksi -->
+    {% if hasil %}
+        <div class="card mt-4 {% if hasil == 'Bisa' %}border-success bg-success-subtle text-success-emphasis{% else %}border-danger bg-danger-subtle text-danger-emphasis{% endif %}">
+            <div class="card-body">
+                <h4 class="card-title">📊 Hasil Prediksi</h4>
+                <p class="card-text fw-bold">✅ Pelanggan <strong>{{ hasil|upper }}</strong> mendaftar kursus</p>
+            </div>
+        </div>
+
+        {% if perhitungan %}
+            <div class="mt-4">
+                <h5>📐 Perhitungan Jarak ({{ perhitungan|length }} Tetangga Terdekat):</h5>
+                <table class="table table-bordered mt-2">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nama</th>
+                            <th>Jarak</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for jarak, status, nama in perhitungan %}
+                            <tr>
+                                <td>{{ nama }}</td>
+                                <td>{{ jarak|floatformat:3 }}</td>
+                                <td>{{ status }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
