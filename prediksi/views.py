@@ -137,17 +137,72 @@ from django.shortcuts import render, redirect
 from .forms import DataUjiForm, DataLatihForm
 from .models import DataLatih
 
+import csv
+import io
+import pandas as pd
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from .forms import DataLatihForm, UploadFileForm
+from .models import DataLatih
+
 @login_required
 def tambah_data_latih(request):
-    form = DataLatihForm(request.POST or None)
-    if form.is_valid():
-        form.save()
-        messages.success(request, "✅ Data berhasil ditambahkan!")
-        return redirect('tambah_data_latih')  # redirect agar tidak submit dua kali
+    form = DataLatihForm()
+    upload_form = UploadFileForm()
+
+    if request.method == 'POST':
+        if 'submit_manual' in request.POST:
+            form = DataLatihForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "✅ Data berhasil ditambahkan!")
+                return redirect('tambah_data_latih')
+
+        elif 'submit_upload' in request.POST:
+            upload_form = UploadFileForm(request.POST, request.FILES)
+            if upload_form.is_valid():
+                file = request.FILES['file']
+                try:
+                    if file.name.endswith('.csv'):
+                        decoded_file = file.read().decode('utf-8')
+                        io_string = io.StringIO(decoded_file)
+                        reader = csv.reader(io_string)
+                        next(reader)  # skip header
+                        for row in reader:
+                            DataLatih.objects.create(
+                                nama=row[0],
+                                hari=int(row[1]),
+                                waktu=int(row[2]),
+                                durasi=int(row[3]),
+                                paket=int(row[4]),
+                                status=row[5]
+                            )
+                    elif file.name.endswith('.xls') or file.name.endswith('.xlsx'):
+                        df = pd.read_excel(file)
+                        for _, row in df.iterrows():
+                            DataLatih.objects.create(
+                                nama=row['nama'],
+                                hari=int(row['hari']),
+                                waktu=int(row['waktu']),
+                                durasi=int(row['durasi']),
+                                paket=int(row['paket']),
+                                status=row['status']
+                            )
+                    else:
+                        messages.error(request, "❌ Format file tidak didukung.")
+                        return redirect('tambah_data_latih')
+
+                    messages.success(request, "✅ File berhasil diimport!")
+                    return redirect('tambah_data_latih')
+
+                except Exception as e:
+                    messages.error(request, f"❌ Gagal mengimport: {e}")
 
     data_latih = DataLatih.objects.all()
     return render(request, 'prediksi/tambah_data_latih.html', {
         'form': form,
+        'upload_form': upload_form,
         'data_latih': data_latih
     })
+
 
